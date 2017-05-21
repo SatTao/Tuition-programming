@@ -1,25 +1,25 @@
 breed [particles particle]
 
 globals [
-  
+
   k
-  
+
 ]
 
 particles-own [
-  
+
   xvel
   yvel
-  
+
   mass
   q
-  
+
   fnetx
   fnety
-  
+
   xcornew
   ycornew
- 
+
   xvelnew
   yvelnew
 ]
@@ -28,82 +28,91 @@ particles-own [
 
 
 to setup
-    
-    clear-all ;; cleaning up all previous simulation data and starting fresh
-    
+
+    clear-all
     set-default-shape particles "circle"
-    
+
     create-particles population [ ;; initialise particles in the simulation
-      
+
       set xcor random-xcor ;; deal with x y starting positions
       set ycor random-ycor
-      
+
       set xvel random-normal mean-start-vel std-dev
       set yvel random-normal mean-start-vel std-dev
-      
+
       set mass random-normal 1 0.1
-      set q random-normal .1 0.005
-      
+      set q random-normal 0 2
+
       set fnetx 0
       set fnety 0
-      
+
       set xcornew 0
       set ycornew 0
-      
-      set xvelnew 0 
+
+      set xvelnew 0
       set yvelnew 0
-      
+
       set size mass
-      
+
       set k 1
-      
+
     ]
 end
 
 to-report coulombs-law [foreigner] ;; asked by the base particle to an other, reporting the forces on base due to the other.
-    
+
     let F (k * q * ([q] of foreigner) / ((distance foreigner) ^ 2))
-    
+
     ;; attractive forces are negative
-    
+
     let fx F * sin towards foreigner
     let fy F * cos towards foreigner
-    
+
     report list fx fy
-    
+
 end
 
 to sum-forces ;; to be used in context of one particle
-  
-  ;; ask one particle to sum the fx and fy components due to all other foreign particles and then set the next force x and y accordingly.
-  
-  let particle-list [ self ] of other particles
-  let forceslist map coulombs-law particle-list
-  foreach
-  map
-  ask myself
-  
+
+  ;; ask one particle to sum the fx and fy components due to all other foreign particles and then set the net force x and y accordingly.
+
+  let forceslist map coulombs-law [ self ] of other particles
+  foreach forceslist [set fnetx fnetx + item 0 ?]
+  foreach forceslist [set fnety fnety + item 1 ?]
+
 end
 
 to do-motion-physics ;; context of a single particle
-  
+
   let ax fnetx / mass
   let ay fnety / mass
-  
+
   ;; we'll use s = ut + 1/2 at^2 to get straight to the deltax and deltay
-  
+
   let deltax (xvel * tstep) + (.5 * ax * (tstep ^ 2))
   let deltay (yvel * tstep) + (.5 * ay * (tstep ^ 2))
-  
+
   set xvelnew xvel + (ax * tstep)
   set yvelnew yvel + (ay * tstep)
-  
+
   set xcornew xcor + deltax
   set ycornew ycor + deltay
-  
+
 end
 
+to update
+  setxy xcornew ycornew
+  set xcornew 0
+  set ycornew 0
 
+  set xvel xvelnew
+  set yvel yvelnew
+  set xvelnew 0
+  set yvelnew 0
+
+  set fnetx 0
+  set fnety 0
+end
 
 
 ;; PLANNED CODE FOR NEXT TIME:
@@ -111,29 +120,36 @@ end
 ;; UPDATE position and velocity data for all particles, and sort out the coulomb-law implementation over 'other particles'
 
 to sim-step
-  
+
   ;; a function which does all the work for a single step of the simulation
-  
+
   ;; get each particle to sum forces, then do-motion-physics, then update, then stop
-  
+
   ask particles [
-    
+
     sum-forces
+  ]
+
+  ask particles [
     do-motion-physics
     update
-    
   ]
-  
+
   ;; a function to update graphs or variables reporting
-  
+
   ;; a function to handle the incrementation of the timestep -> timestep*number of simulation steps elapsed = real time.
-  
+
   ;; realtime analysis function to report data, or to report a metric like collisions, or average speeds, or similar.
-  
+
 end
 
-  
-  
+to go
+
+  sim-step
+
+end
+
+
 
 
 @#$#@#$#@
@@ -162,6 +178,7 @@ GRAPHICS-WINDOW
 0
 1
 ticks
+30.0
 
 SLIDER
 180
@@ -172,7 +189,7 @@ tstep
 tstep
 .001
 .01
-0.0070
+0.003
 .001
 1
 [s]
@@ -193,6 +210,7 @@ NIL
 NIL
 NIL
 NIL
+1
 
 SLIDER
 180
@@ -201,9 +219,9 @@ SLIDER
 128
 mean-start-vel
 mean-start-vel
+-1
 1
-10
-3
+0
 1
 1
 NIL
@@ -217,8 +235,8 @@ SLIDER
 std-dev
 std-dev
 0.1
+5
 1
-0.8
 .1
 1
 NIL
@@ -233,55 +251,64 @@ population
 population
 2
 100
-2
+26
 1
 1
 NIL
 HORIZONTAL
 
+BUTTON
+70
+70
+133
+103
+NIL
+go
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
 @#$#@#$#@
-WHAT IS IT?
------------
+## WHAT IS IT?
+
 This section could give a general understanding of what the model is trying to show or explain.
 
+## HOW IT WORKS
 
-HOW IT WORKS
-------------
 This section could explain what rules the agents use to create the overall behavior of the model.
 
+## HOW TO USE IT
 
-HOW TO USE IT
--------------
 This section could explain how to use the model, including a description of each of the items in the interface tab.
 
+## THINGS TO NOTICE
 
-THINGS TO NOTICE
-----------------
 This section could give some ideas of things for the user to notice while running the model.
 
+## THINGS TO TRY
 
-THINGS TO TRY
--------------
 This section could give some ideas of things for the user to try to do (move sliders, switches, etc.) with the model.
 
+## EXTENDING THE MODEL
 
-EXTENDING THE MODEL
--------------------
 This section could give some ideas of things to add or change in the procedures tab to make the model more complicated, detailed, accurate, etc.
 
+## NETLOGO FEATURES
 
-NETLOGO FEATURES
-----------------
 This section could point out any especially interesting or unusual features of NetLogo that the model makes use of, particularly in the Procedures tab.  It might also point out places where workarounds were needed because of missing features.
 
+## RELATED MODELS
 
-RELATED MODELS
---------------
 This section could give the names of models in the NetLogo Models Library or elsewhere which are of related interest.
 
+## CREDITS AND REFERENCES
 
-CREDITS AND REFERENCES
-----------------------
 This section could contain a reference to the model's URL on the web if it has one, as well as any other necessary credits or references.
 @#$#@#$#@
 default
@@ -576,7 +603,7 @@ Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 
 @#$#@#$#@
-NetLogo 4.1.3
+NetLogo 5.3.1
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
@@ -584,9 +611,9 @@ NetLogo 4.1.3
 @#$#@#$#@
 default
 0.0
--0.2 0 1.0 0.0
+-0.2 0 0.0 1.0
 0.0 1 1.0 0.0
-0.2 0 1.0 0.0
+0.2 0 0.0 1.0
 link direction
 true
 0
