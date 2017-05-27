@@ -57,6 +57,8 @@ to setup
       set k 1
 
     ]
+
+  reset-ticks
 end
 
 to-report coulombs-law [foreigner] ;; asked by the base particle to an other, reporting the forces on base due to the other.
@@ -125,6 +127,22 @@ to sim-step
 
   ;; get each particle to sum forces, then do-motion-physics, then update, then stop
 
+  let worstmetric 0; ;; close and fast is bad.
+
+  ask particles [
+
+
+    ask other particles [
+
+      let t time-metric
+      if t > worstmetric [set worstmetric t]
+
+    ]
+  ]
+
+  set tstep 0.000001 + (1 / worstmetric) * 0.01
+
+
   ask particles [
 
     sum-forces
@@ -146,11 +164,34 @@ end
 to go
 
   sim-step
+  tick
 
 end
 
 
+to-report myspeed
+  report sqrt (xvel ^ 2 + yvel ^ 2)
+end
 
+
+to-report mymomentum
+  report mass * myspeed
+end
+
+to-report system-momentum
+  report sum [mymomentum] of particles
+end
+
+to-report time-metric
+
+  ;; relative velocity / d ^ 2 is our metric.
+
+  let xrel [xvel] of myself - xvel
+  let yrel [yvel] of myself - yvel
+
+  report sqrt (xrel ^ 2 + yrel ^ 2) / (distance myself) ^ 2
+
+end
 
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -223,7 +264,7 @@ population
 population
 2
 30
-2.0
+30.0
 1
 1
 NIL
@@ -238,7 +279,7 @@ mean-start-vel
 mean-start-vel
 0
 5
-0.0
+1.0
 1
 1
 NIL
@@ -253,7 +294,7 @@ std-dev
 std-dev
 0
 2
-0.4
+0.2
 .1
 1
 NIL
@@ -268,11 +309,40 @@ tstep
 tstep
 0
 .1
-0.03
+7.4659035782837535E-6
 0.01
 1
 NIL
 HORIZONTAL
+
+MONITOR
+258
+68
+375
+113
+NIL
+system-momentum
+17
+1
+11
+
+PLOT
+229
+351
+429
+501
+plot 1
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" "plot system-momentum"
+PENS
+"default" 1.0 0 -16777216 true "" ""
 
 @#$#@#$#@
 ## WHAT IS IT?
